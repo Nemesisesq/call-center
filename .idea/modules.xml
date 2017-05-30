@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/dialer.iml" filepath="$PROJECT_DIR$/.idea/dialer.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/click-2-call.iml" filepath="$PROJECT_DIR$/.idea/click-2-call.iml" />
     </modules>
   </component>
 </project>
