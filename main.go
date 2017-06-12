@@ -59,7 +59,7 @@ func twiml(w http.ResponseWriter, r *http.Request) {
 
 	tDial := &TwiMLDial{
 		Value:  prospect.PhoneNumber,
-		Action: fmt.Sprintf("%v/status", os.Getenv("SELF_URL")),
+		Action: "/status",
 	}
 
 	twiml := TwiML{

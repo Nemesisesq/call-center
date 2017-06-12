@@ -1,9 +1,10 @@
 package hub
 
 import (
-	"fmt"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/Sirupsen/logrus"
 )
 
 type Hub struct {
@@ -42,9 +43,9 @@ type Prospect struct {
 }
 
 func (h Hub) Status(w http.ResponseWriter, r *http.Request) {
-	fmt.Println(r.URL.Query())
-	fmt.Println("Hello", "World")
+	//fmt.Println(r.URL.Query())
+	//fmt.Println("Hello", "World")
 
 	b, _ := ioutil.ReadAll(r.Body)
-	fmt.Println(string(b))
+	logrus.Info(string(b))
 }
