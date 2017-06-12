@@ -13,9 +13,12 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
+	"github.com/nemesisesq/click-2-call/hub"
 	"github.com/robfig/cron"
 	"github.com/urfave/negroni"
 )
+
+var Hub hub.Hub
 
 func main() {
 
@@ -33,8 +36,11 @@ func main() {
 	r := mux.NewRouter()
 	n := negroni.Classic()
 
+	Hub = hub.NewHub()
+
 	r.HandleFunc("/twiml", twiml)
 	r.HandleFunc("/call", call)
+	r.HandleFunc("/status", Hub.Status)
 	//OneOff()
 
 	n.UseHandler(r)
@@ -49,8 +55,11 @@ func twiml(w http.ResponseWriter, r *http.Request) {
 		Value: "Please Wait we are connecting you with the prospect",
 	}
 
+	prospect := <-Hub.WaitingProspects
+
 	tDial := &TwiMLDial{
-		Value: "+19145579235",
+		Value:  prospect.PhoneNumber,
+		Action: "/status",
 	}
 
 	twiml := TwiML{
@@ -79,28 +88,46 @@ type TwiMLDial struct {
 
 	Value string `xml:",chardata"`
 
-	Action                        string `xml:"action,attr,omitempty"`                           //relative or absolute URL	no default action for Dial
-	Method                        string `xml:"method,attr,omitempty"`                           //GET, POST	POST
-	Timeout                       string `xml:"timeout,attr,omitempty"`                          //positive integer	30 seconds
-	HangupOnStar                  string `xml:"hangupOnStar,attr,omitempty"`                   //true, false	false
-	TimeLimit                     string `xml:"timeLimit,attr,omitempty"`                       //positive integer (seconds)	14400 seconds (4 hours)
-	CallerId                      string `xml:"callerId,attr,omitempty"`                        //a valid phone number, or client identifier if you are dialing a <Client>.	Caller's callerId
-	Record                        string `xml:"record,attr,omitempty"`                           //do-not-record, record-from-answer, record-from-ringing, record-from-answer-dual, record-from-ringing-dual.For backward compatibility, true is an alias for record-from-answer and false is an alias for do-not-record. do-notrecord
-	Trim                          string `xml:"trim,attr,omitempty"`                             //trim-silence, do-not-trim	do-not-trim
-	RecordingStatusCallback       string `xml:"recordingStatusCallback,attr,omitempty"`        //relative or absolute URL	none
+	Action                        string `xml:"action,attr,omitempty"`                        //relative or absolute URL	no default action for Dial
+	Method                        string `xml:"method,attr,omitempty"`                        //GET, POST	POST
+	Timeout                       string `xml:"timeout,attr,omitempty"`                       //positive integer	30 seconds
+	HangupOnStar                  string `xml:"hangupOnStar,attr,omitempty"`                  //true, false	false
+	TimeLimit                     string `xml:"timeLimit,attr,omitempty"`                     //positive integer (seconds)	14400 seconds (4 hours)
+	CallerId                      string `xml:"callerId,attr,omitempty"`                      //a valid phone number, or client identifier if you are dialing a <Client>.	Caller's callerId
+	Record                        string `xml:"record,attr,omitempty"`                        //do-not-record, record-from-answer, record-from-ringing, record-from-answer-dual, record-from-ringing-dual.For backward compatibility, true is an alias for record-from-answer and false is an alias for do-not-record. do-notrecord
+	Trim                          string `xml:"trim,attr,omitempty"`                          //trim-silence, do-not-trim	do-not-trim
+	RecordingStatusCallback       string `xml:"recordingStatusCallback,attr,omitempty"`       //relative or absolute URL	none
 	RecordingStatusCallbackMethod string `xml:"recordingStatusCallbackMethod,attr,omitempty"` //GET, POST	POST
-	RingTone                      string `xml:"ringTone,attr,omitempty"`                        //ISO 3166-1 alpha-2 country code	automatic
+	RingTone                      string `xml:"ringTone,attr,omitempty"`                      //ISO 3166-1 alpha-2 country code	automatic
 }
 
 type TwiML struct {
 	XMLName xml.Name `xml:"Response"`
 
 	Say  TwiMLSay  `xml:",omitempty"`
-	Play string `xml:",omitempty"`
-	Dial TwiMLDial    `xml:",omitempty"`
+	Play string    `xml:",omitempty"`
+	Dial TwiMLDial `xml:",omitempty"`
 }
 
 func call(w http.ResponseWriter, r *http.Request) {
+
+	fmt.Println(r.URL.Query())
+	p, ok := r.URL.Query()["prospect"]
+	if !ok || len(p) < 1 {
+		log.Println("Url Param 'prospect' is missing")
+		return
+	}
+
+	n, ok := r.URL.Query()["name"]
+	if !ok || len(n) < 1 {
+		log.Println("Url Param 'name' is missing")
+		return
+	}
+
+	prospect := hub.Prospect{hub.Person{Name: n[0], PhoneNumber: p[0]}}
+
+	Hub.WaitingProspects <- prospect
+
 	caller()
 
 	//resp, err := CallAgent("+2165346715")
