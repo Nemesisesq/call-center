@@ -1,5 +1,5 @@
 {
-	"ImportPath": "github.com/nemesisesq/dialer",
+	"ImportPath": "github.com/nemesisesq/click-2-call",
 	"GoVersion": "go1.8",
 	"GodepVersion": "v79",
 	"Deps": [
