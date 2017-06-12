@@ -1,1 +1,1 @@
-web: dialer
+web: click-2-call
